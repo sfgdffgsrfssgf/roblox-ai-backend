@@ -1,11 +1,8 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch"; // If you're using an older Node.js version, keep this
-import dotenv from "dotenv";
+import fetch from "node-fetch";
 
-dotenv.config();
-
-const COHERE_API_KEY = process.env.COHERE_API_KEY;
+const COHERE_API_KEY = "1C4m5JayoWDHoRGSNuMdSywujUe35xypd7MLSNFJ"; // 👈 Replace this with your real key
 const port = process.env.PORT || 3000;
 
 const app = express();
@@ -14,19 +11,17 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("✅ AI backend is running!");
+  res.send("✅ AI backend is running (no .env used)");
 });
 
 app.post("/ask", async (req, res) => {
   console.log("✅ Request received at /ask");
 
   const { prompt } = req.body;
-
   console.log("📝 Prompt:", prompt);
 
   if (!prompt) {
-    console.warn("⚠️ No prompt provided");
-    return res.status(400).json({ error: "Missing prompt in request body" });
+    return res.status(400).json({ error: "Missing prompt" });
   }
 
   try {
@@ -47,20 +42,21 @@ app.post("/ask", async (req, res) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("❌ Cohere returned an error:", data);
+      console.error("❌ Cohere error:", data);
       return res.status(500).json({ error: data });
     }
 
-    console.log("✅ Cohere response:", data);
+    console.log("✅ Cohere reply:", data);
     res.json({ answer: data.text });
-  } catch (error) {
-    console.error("❌ Network error to Cohere:", error);
-    res.status(500).json({ error: "Cohere API failed." });
+  } catch (err) {
+    console.error("❌ Network error:", err);
+    res.status(500).json({ error: "Backend failed" });
   }
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Server listening on port ${port}`);
+  console.log(`🚀 Server running on port ${port}`);
 });
+
 
 
