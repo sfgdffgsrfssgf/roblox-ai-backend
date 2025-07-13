@@ -1,59 +1,66 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";  // If using Node <18; Node 18+ has fetch built-in
+import fetch from "node-fetch"; // If you're using an older Node.js version, keep this
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const COHERE_API_KEY = process.env.COHERE_API_KEY;
+const port = process.env.PORT || 3000;
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-const COHERE_API_KEY = process.env.COHERE_API_KEY;
-
 app.get("/", (req, res) => {
-  res.send("Cohere AI backend is running.");
+  res.send("✅ AI backend is running!");
 });
 
 app.post("/ask", async (req, res) => {
+  console.log("✅ Request received at /ask");
+
   const { prompt } = req.body;
 
+  console.log("📝 Prompt:", prompt);
+
   if (!prompt) {
-    return res.status(400).json({ error: "Missing prompt" });
+    console.warn("⚠️ No prompt provided");
+    return res.status(400).json({ error: "Missing prompt in request body" });
   }
 
   try {
-    const response = await fetch("https://api.cohere.ai/generate", {
+    const response = await fetch("https://api.cohere.ai/v1/chat", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${COHERE_API_KEY}`,
+        Authorization: `Bearer ${COHERE_API_KEY}`,
         "Content-Type": "application/json",
+        "Cohere-Version": "2022-12-06"
       },
       body: JSON.stringify({
-        model: "command-xlarge-nightly",
-        prompt,
-        max_tokens: 100,
+        message: prompt,
+        model: "command-r",
         temperature: 0.7,
-        k: 0,
-        p: 1,
-        frequency_penalty: 0,
-        presence_penalty: 0,
-        stop_sequences: ["--"],
       }),
     });
 
     const data = await response.json();
 
-    if (data.generations && data.generations.length > 0) {
-      res.json({ answer: data.generations[0].text.trim() });
-    } else {
-      res.status(500).json({ error: "No response from Cohere" });
+    if (!response.ok) {
+      console.error("❌ Cohere returned an error:", data);
+      return res.status(500).json({ error: data });
     }
-  } catch (err) {
-    console.error("Error calling Cohere:", err);
-    res.status(500).json({ error: "Failed to call Cohere" });
+
+    console.log("✅ Cohere response:", data);
+    res.json({ answer: data.text });
+  } catch (error) {
+    console.error("❌ Network error to Cohere:", error);
+    res.status(500).json({ error: "Cohere API failed." });
   }
 });
 
-const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+  console.log(`🚀 Server listening on port ${port}`);
 });
+
 
