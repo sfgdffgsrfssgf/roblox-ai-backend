@@ -1,18 +1,15 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch"; // Gemini uses raw HTTP
+import fetch from "node-fetch";  // If using Node <18; Node 18+ has fetch built-in
 
 const app = express();
-const port = process.env.PORT || 3000;
-
 app.use(cors());
 app.use(express.json());
 
-// Replace with your actual Gemini API key or use environment variable
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "YOUR_GEMINI_API_KEY_HERE";
+const COHERE_API_KEY = process.env.COHERE_API_KEY;
 
 app.get("/", (req, res) => {
-  res.send("Hello! Gemini AI backend is running.");
+  res.send("Cohere AI backend is running.");
 });
 
 app.post("/ask", async (req, res) => {
@@ -23,33 +20,40 @@ app.post("/ask", async (req, res) => {
   }
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch("https://api.cohere.ai/generate", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Authorization": `Bearer ${COHERE_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      })
+        model: "command-xlarge-nightly",
+        prompt,
+        max_tokens: 100,
+        temperature: 0.7,
+        k: 0,
+        p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+        stop_sequences: ["--"],
+      }),
     });
 
     const data = await response.json();
 
-    if (data && data.candidates && data.candidates.length > 0) {
-      const aiReply = data.candidates[0].content.parts[0].text;
-      res.json({ answer: aiReply });
+    if (data.generations && data.generations.length > 0) {
+      res.json({ answer: data.generations[0].text.trim() });
     } else {
-      console.error("Unexpected Gemini response:", data);
-      res.status(500).json({ error: "Invalid Gemini response" });
+      res.status(500).json({ error: "No response from Cohere" });
     }
   } catch (err) {
-    console.error("Gemini API error:", err);
-    res.status(500).json({ error: "Gemini API error" });
+    console.error("Error calling Cohere:", err);
+    res.status(500).json({ error: "Failed to call Cohere" });
   }
 });
 
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
