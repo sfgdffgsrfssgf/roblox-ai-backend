@@ -1,0 +1,11 @@
+{
+  "name": "roblox-ai-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "openai": "^5.9.0"
+  }
+}
